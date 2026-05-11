@@ -21,7 +21,9 @@
                         <div class="muted">Current Run</div>
                         <h2>@currentRun?.Variety</h2>
                     </div>
-                    <span class="status">RUNNING</span>
+                    <span class="@(currentRun?.IsRunning == true ? "status running" : "status stopped")">
+                        @(currentRun?.IsRunning == true ? "RUNNING" : "STOPPED")
+                    </span>
                 </div>
                 <div class="run-grid">
                     <div><span>Start</span><strong>@currentRun?.StartTime.ToString("HH:mm")</strong></div>

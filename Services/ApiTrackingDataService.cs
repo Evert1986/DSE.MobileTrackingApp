@@ -3,6 +3,8 @@ using DSE.MobileTrackingApp.Models;
 
 namespace DSE.MobileTrackingApp.Services;
 
+
+
 public sealed class ApiTrackingDataService : ITrackingDataService
 {
     private readonly HttpClient _httpClient;
@@ -17,21 +19,30 @@ public sealed class ApiTrackingDataService : ITrackingDataService
 
     public async Task<CurrentRun> GetCurrentRunAsync()
     {
-        var values = await GetLatestValuesAsync();
+        var currentRun = await _httpClient.GetFromJsonAsync<CurrentRunDto>(
+            "api/mobile/current-run");
 
-        var latest = values
-            .Where(x => x.DateOfLog.HasValue)
-            .OrderByDescending(x => x.DateOfLog)
-            .FirstOrDefault();
+        if (currentRun is null)
+        {
+            return new CurrentRun(
+                Facility: "BBI",
+                Packline: "Packline 1",
+                Variety: "No Data",
+                BatchId: "-",
+                OperatorName: "David M",
+                StartTime: DateTime.Now,
+                IsRunning: false
+            );
+        }
 
         return new CurrentRun(
-            Facility: "BBI",
-            Packline: "Packline 1",
-            Variety: "Live SQL Data",
-            BatchId: latest?.MachineName ?? "-",
-            OperatorName: "David M",
-            StartTime: latest?.DateOfLog ?? DateTime.Now,
-            IsRunning: latest is not null
+            Facility: currentRun.Facility,
+            Packline: currentRun.Packline,
+            Variety: currentRun.Variety,
+            BatchId: currentRun.BatchId,
+            OperatorName: currentRun.OperatorName,
+            StartTime: currentRun.StartTime,
+            IsRunning: currentRun.IsRunning
         );
     }
 

@@ -56,15 +56,15 @@ app.MapGet("/api/health/database", async (ISqlConnectionFactory connectionFactor
     }
 });
 
-app.MapGet("/api/mobile/latest-basic-values", async (IBasicValuesRepository repository) =>
+app.MapGet("/api/mobile/latest-basic-values", async (int? line, IBasicValuesRepository repository) =>
 {
-    var result = await repository.GetLatestBasicValuesAsync();
+    var result = await repository.GetLatestBasicValuesAsync(line ?? 1);
     return Results.Ok(result);
 });
 
-app.MapGet("/api/mobile/current-run", async (IBasicValuesRepository repository) =>
+app.MapGet("/api/mobile/current-run", async (int? line, IBasicValuesRepository repository) =>
 {
-    var result = await repository.GetCurrentRunAsync();
+    var result = await repository.GetCurrentRunAsync(line ?? 1);
     return Results.Ok(result);
 });
 

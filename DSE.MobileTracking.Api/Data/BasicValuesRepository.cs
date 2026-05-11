@@ -8,8 +8,8 @@ namespace DSE.MobileTracking.Api.Data;
 
 public interface IBasicValuesRepository
 {
-    Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync();
-    Task<CurrentRunDto> GetCurrentRunAsync();
+    Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync(int line);
+    Task<CurrentRunDto> GetCurrentRunAsync(int line);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -22,32 +22,36 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync()
+    public async Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync(int line)
     {
+        line = NormalizeLine(line);
+
         using var connection = _connectionFactory.CreateConnection();
 
         var results = new List<BasicMachineValuesDto>
-        {
-            await GetLatestFromTableAsync(connection, "DosingMachine1", 1, "Dosing"),
-            await GetLatestFromTableAsync(connection, "DosingMachine2", 2, "Dosing"),
-            await GetLatestFromTableAsync(connection, "DrenchDosingMachine1", 1, "Drench Dosing"),
-            await GetLatestFromTableAsync(connection, "DrenchDosingMachine2", 2, "Drench Dosing")
-        };
+    {
+        await GetLatestFromTableAsync(connection, $"DosingMachine{line}", line, "Dosing"),
+        await GetLatestFromTableAsync(connection, $"DrenchDosingMachine{line}", line, "Drench Dosing")
+    };
 
         return results;
     }
 
-    public async Task<CurrentRunDto> GetCurrentRunAsync()
+    public async Task<CurrentRunDto> GetCurrentRunAsync(int line)
     {
-        const string sql = """
-            SELECT TOP 1
-                [CurrentBatchId],
-                [CurrentBatchVarietyName],
-                [CurrentBatchStartTime],
-                [ActualStatus]
-            FROM [dbo].[SizerOnlyDataLine1]
-            ORDER BY [DateOfLog] DESC;
-            """;
+        line = NormalizeLine(line);
+
+        var tableName = $"SizerOnlyDataLine{line}";
+
+        var sql = $"""
+    SELECT TOP 1
+        [CurrentBatchId],
+        [CurrentBatchVarietyName],
+        [CurrentBatchStartTime],
+        [ActualStatus]
+    FROM [dbo].[{tableName}]
+    ORDER BY [DateOfLog] DESC;
+    """;
 
         using var connection = _connectionFactory.CreateConnection();
 
@@ -58,7 +62,7 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             return new CurrentRunDto
             {
                 Facility = "BBI",
-                Packline = "Packline 1",
+                Packline = $"Packline {line}",
                 Variety = "No Data",
                 BatchId = "-",
                 OperatorName = "David M",
@@ -74,12 +78,14 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         return new CurrentRunDto
         {
             Facility = "BBI",
-            Packline = "Packline 1",
+            Packline = $"Packline {line}",
             Variety = row.CurrentBatchVarietyName ?? "",
             BatchId = row.CurrentBatchId ?? "",
             OperatorName = "David M",
             StartTime = row.CurrentBatchStartTime ?? DateTime.Now,
-            ActualStatus = string.IsNullOrWhiteSpace(actualStatus) ? "STOPPED" : actualStatus.ToUpperInvariant(),
+            ActualStatus = string.IsNullOrWhiteSpace(actualStatus)
+                ? "STOPPED"
+                : actualStatus.ToUpperInvariant(),
             IsRunning = isRunning
         };
     }
@@ -126,5 +132,10 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             Line = line,
             MachineType = machineType
         };
+    }
+
+    private static int NormalizeLine(int line)
+    {
+        return line == 2 ? 2 : 1;
     }
 }
