@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: YOUR-AZURE-WEBAPP-NAME
+  AZURE_WEBAPP_NAME: dse-mobiletracking-api
   PROJECT_PATH: DSE.MobileTracking.Api/DSE.MobileTracking.Api.csproj
   DOTNET_VERSION: '10.0.x'
 
