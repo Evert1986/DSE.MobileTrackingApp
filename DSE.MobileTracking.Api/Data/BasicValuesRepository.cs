@@ -220,7 +220,7 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         VALUES
         (
             @Titration,
-            SYSDATETIME()
+            CAST(SYSUTCDATETIME() AT TIME ZONE 'UTC' AT TIME ZONE 'South Africa Standard Time' AS datetime)
         );
         """;
 

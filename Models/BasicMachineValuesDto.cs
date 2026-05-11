@@ -12,4 +12,5 @@ public sealed class BasicMachineValuesDto
     public decimal? BinCountSinceLastReset { get; set; }
 
     public decimal? LitresPerTon { get; set; }
+    public decimal? Titration { get; set; }
 }

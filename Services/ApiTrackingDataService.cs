@@ -70,6 +70,10 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             {
                 AddReading(readings, "Wax", "🛢️", item.LitresPerTon, "L/Ton", 0.8m, 1.5m);
             }
+            else if (IsAppData(item))
+            {
+                AddReading(readings, "Titration", "🧪", item.Titration, "ppm", 500m, 600m);
+            }
         }
 
         return readings;
@@ -99,6 +103,11 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             {
                 AddHistory(history, "Wax", "🛢️", item.LitresPerTon, "L/Ton", readingTime, 0.8m, 1.5m);
             }
+            else if (IsAppData(item))
+            {
+                AddHistory(history, "Titration", "🧪", item.Titration, "ppm", readingTime, 500m, 600m);
+            }
+
         }
 
         return history
@@ -128,10 +137,29 @@ public sealed class ApiTrackingDataService : ITrackingDataService
         return alerts;
     }
 
-    public Task SaveReadingAsync(ReadingInput input)
+    public async Task SaveReadingAsync(ReadingInput input)
     {
-        // We will connect this to a POST endpoint later.
-        return Task.CompletedTask;
+        if (!input.Parameter.Equals("Titration", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!input.Value.HasValue)
+        {
+            return;
+        }
+
+        var request = new TitrationInputDto
+        {
+            Line = SelectedLine,
+            Titration = input.Value.Value
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/mobile/titration", request);
+
+        response.EnsureSuccessStatusCode();
+
+        _cachedValues = null;
     }
 
     private int _cachedLine;
@@ -173,6 +201,12 @@ public sealed class ApiTrackingDataService : ITrackingDataService
     {
         return item.MachineType.Equals("Wax", StringComparison.OrdinalIgnoreCase)
             || item.MachineName.StartsWith("WaxMachine", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAppData(BasicMachineValuesDto item)
+    {
+        return item.MachineType.Equals("App Data", StringComparison.OrdinalIgnoreCase)
+            || item.MachineName.StartsWith("Line", StringComparison.OrdinalIgnoreCase);
     }
     private static void AddReading(
         List<ParameterReading> readings,
