@@ -1,5 +1,6 @@
 using Dapper;
 using DSE.MobileTracking.Api.Data;
+using DSE.MobileTracking.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +67,29 @@ app.MapGet("/api/mobile/current-run", async (int? line, IBasicValuesRepository r
 {
     var result = await repository.GetCurrentRunAsync(line ?? 1);
     return Results.Ok(result);
+});
+
+app.MapPost("/api/mobile/titration", async (
+    TitrationInputDto input,
+    IBasicValuesRepository repository) =>
+{
+    if (input.Line != 1 && input.Line != 2)
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Line must be 1 or 2."
+        });
+    }
+
+    await repository.SaveTitrationAsync(input.Line, input.Titration);
+
+    return Results.Ok(new
+    {
+        Status = "Titration saved",
+        Line = input.Line,
+        Titration = input.Titration,
+        TimeUtc = DateTime.UtcNow
+    });
 });
 
 app.Run();

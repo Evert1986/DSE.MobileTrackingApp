@@ -56,13 +56,20 @@ public sealed class ApiTrackingDataService : ITrackingDataService
 
         foreach (var item in values)
         {
-            var prefix = $"{item.MachineName}";
-
-            AddReading(readings, $"{prefix} pH", "💧", item.PH, "", 5.0m, 7.0m);
-            AddReading(readings, $"{prefix} Temperature", "🌡️", item.Temperature, "°C", 18.0m, 24.0m);
-            AddReading(readings, $"{prefix} Tons/hr", "⚖️", item.TonsPerHour, "t/h", 0m, 100m);
-            AddReading(readings, $"{prefix} Bin Count", "📦", item.BinCountSinceLastReset, "bins", 0m, 999999m);
-            AddReading(readings, $"{prefix} Wax", "🛢️", item.LitresPerTon, "L/Ton", 0.8m, 1.5m);
+            if (IsDosingMachine(item))
+            {
+                AddReading(readings, "pH", "💧", item.PH, "", 5.0m, 7.0m);
+                AddReading(readings, "Temperature", "🌡️", item.Temperature, "°C", 18.0m, 24.0m);
+                AddReading(readings, "Tons", "⚖️", item.TonsPerHour, "t/h", 0m, 100m);
+            }
+            else if (IsDrenchDosingMachine(item))
+            {
+                AddReading(readings, "Bins", "📦", item.BinCountSinceLastReset, "bins", 0m, 999999m);
+            }
+            else if (IsWaxMachine(item))
+            {
+                AddReading(readings, "Wax", "🛢️", item.LitresPerTon, "L/Ton", 0.8m, 1.5m);
+            }
         }
 
         return readings;
@@ -77,13 +84,21 @@ public sealed class ApiTrackingDataService : ITrackingDataService
         foreach (var item in values)
         {
             var readingTime = item.DateOfLog ?? DateTime.Now;
-            var prefix = $"{item.MachineName}";
 
-            AddHistory(history, $"{prefix} pH", "💧", item.PH, "", readingTime, 5.0m, 7.0m);
-            AddHistory(history, $"{prefix} Temperature", "🌡️", item.Temperature, "°C", readingTime, 18.0m, 24.0m);
-            AddHistory(history, $"{prefix} Tons/hr", "⚖️", item.TonsPerHour, "t/h", readingTime, 0m, 100m);
-            AddHistory(history, $"{prefix} Bin Count", "📦", item.BinCountSinceLastReset, "bins", readingTime, 0m, 999999m);
-            AddHistory(history, $"{prefix} Wax", "🛢️", item.LitresPerTon, "L/Ton", readingTime, 0.8m, 1.5m);
+            if (IsDosingMachine(item))
+            {
+                AddHistory(history, "pH", "💧", item.PH, "", readingTime, 5.0m, 7.0m);
+                AddHistory(history, "Temperature", "🌡️", item.Temperature, "°C", readingTime, 18.0m, 24.0m);
+                AddHistory(history, "Tons", "⚖️", item.TonsPerHour, "t/h", readingTime, 0m, 100m);
+            }
+            else if (IsDrenchDosingMachine(item))
+            {
+                AddHistory(history, "Bins", "📦", item.BinCountSinceLastReset, "bins", readingTime, 0m, 999999m);
+            }
+            else if (IsWaxMachine(item))
+            {
+                AddHistory(history, "Wax", "🛢️", item.LitresPerTon, "L/Ton", readingTime, 0.8m, 1.5m);
+            }
         }
 
         return history
@@ -142,6 +157,23 @@ public sealed class ApiTrackingDataService : ITrackingDataService
         return _cachedValues;
     }
 
+    private static bool IsDosingMachine(BasicMachineValuesDto item)
+    {
+        return item.MachineType.Equals("Dosing", StringComparison.OrdinalIgnoreCase)
+            || item.MachineName.StartsWith("DosingMachine", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDrenchDosingMachine(BasicMachineValuesDto item)
+    {
+        return item.MachineType.Equals("Drench Dosing", StringComparison.OrdinalIgnoreCase)
+            || item.MachineName.StartsWith("DrenchDosingMachine", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsWaxMachine(BasicMachineValuesDto item)
+    {
+        return item.MachineType.Equals("Wax", StringComparison.OrdinalIgnoreCase)
+            || item.MachineName.StartsWith("WaxMachine", StringComparison.OrdinalIgnoreCase);
+    }
     private static void AddReading(
         List<ParameterReading> readings,
         string name,

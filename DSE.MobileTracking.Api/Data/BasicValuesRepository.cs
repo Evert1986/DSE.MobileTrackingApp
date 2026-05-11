@@ -10,6 +10,7 @@ public interface IBasicValuesRepository
 {
     Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync(int line);
     Task<CurrentRunDto> GetCurrentRunAsync(int line);
+    Task SaveTitrationAsync(int line, decimal titration);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -32,7 +33,8 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
     {
         await GetLatestFromTableAsync(connection, $"DosingMachine{line}", line, "Dosing"),
         await GetLatestFromTableAsync(connection, $"DrenchDosingMachine{line}", line, "Drench Dosing"),
-        await GetLatestWaxFromTableAsync(connection, $"WaxMachine{line}", line, "Wax")
+        await GetLatestWaxFromTableAsync(connection, $"WaxMachine{line}", line, "Wax"),
+        await GetLatestTitrationFromTableAsync(connection, $"Line{line}AppData", line, "App Data")
     };
 
         return results;
@@ -168,6 +170,66 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             Line = line,
             MachineType = machineType
         };
+    }
+
+    private static async Task<BasicMachineValuesDto> GetLatestTitrationFromTableAsync(
+    System.Data.IDbConnection connection,
+    string tableName,
+    int line,
+    string machineType)
+    {
+        var sql = $"""
+        SELECT TOP 1
+            '{tableName}' AS MachineName,
+            @Line AS Line,
+            @MachineType AS MachineType,
+            [DateOfLog],
+            [Titration]
+        FROM [dbo].[{tableName}]
+        ORDER BY [DateOfLog] DESC;
+        """;
+
+        var result = await connection.QuerySingleOrDefaultAsync<BasicMachineValuesDto>(
+            sql,
+            new
+            {
+                Line = line,
+                MachineType = machineType
+            });
+
+        return result ?? new BasicMachineValuesDto
+        {
+            MachineName = tableName,
+            Line = line,
+            MachineType = machineType
+        };
+    }
+
+    public async Task SaveTitrationAsync(int line, decimal titration)
+    {
+        line = NormalizeLine(line);
+
+        var tableName = $"Line{line}AppData";
+
+        var sql = $"""
+        INSERT INTO [dbo].[{tableName}]
+        (
+            [Titration],
+            [DateOfLog]
+        )
+        VALUES
+        (
+            @Titration,
+            SYSDATETIME()
+        );
+        """;
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        await connection.ExecuteAsync(sql, new
+        {
+            Titration = titration
+        });
     }
 
     private static int NormalizeLine(int line)
