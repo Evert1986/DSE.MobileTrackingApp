@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Keep Android generated Java wrapper paths short on Windows.
+      Without this, Xamarin.Android / .NET Android can fail with XAJCW7023
+      when the project is extracted into a long Downloads folder path.
+    -->
+    <BaseIntermediateOutputPath>$(TEMP)\DSEMobileTracking\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

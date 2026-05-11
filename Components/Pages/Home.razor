@@ -1,0 +1,277 @@
+@inject ITrackingDataService DataService
+
+<div class="app">
+    <div class="top">
+        <div>
+            <div class="muted">@currentRun?.Facility</div>
+            <h1>@currentRun?.Packline</h1>
+        </div>
+        <button class="bell">🔔</button>
+
+       
+
+    </div>
+
+    <main class="screen">
+        @if (activeTab == "home")
+        {
+            <section class="run-card">
+                <div class="row between">
+                    <div>
+                        <div class="muted">Current Run</div>
+                        <h2>@currentRun?.Variety</h2>
+                    </div>
+                    <span class="status">RUNNING</span>
+                </div>
+                <div class="run-grid">
+                    <div><span>Start</span><strong>@currentRun?.StartTime.ToString("HH:mm")</strong></div>
+                    <div><span>Batch</span><strong>@currentRun?.BatchId</strong></div>
+                    <div><span>Operator</span><strong>@currentRun?.OperatorName</strong></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="row between">
+                    <h3>Key Parameters</h3>
+                    <a>Live</a>
+                </div>
+                @foreach (var p in parameters)
+                {
+                    <div class="parameter-card">
+                        <div>
+                            <div class="parameter-name">@p.Icon @p.Name</div>
+                            <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                        </div>
+                        <div class="value">@p.Value <small>@p.Unit</small></div>
+                    </div>
+                }
+            </section>
+
+            
+        }
+        else if (activeTab == "readings")
+        {
+            <section class="panel">
+                <h3>Add Reading</h3>
+
+                <label>Parameter</label>
+                <select value="@newReading.Parameter" onchange="@OnParameterChanged">
+                    <option value="pH">pH</option>
+                    <option value="Temperature">Temperature</option>
+                    <option value="Titration">Titration</option>
+                    <option value="Wax">Wax</option>
+                    <option value="Drench Dose">Drench Dose</option>
+                </select>
+
+                <label>Value</label>
+                <input type="number" step="0.01" value="@newReading.Value" onchange="@OnValueChanged" />
+
+                <label>Unit</label>
+                <input value="@newReading.Unit" onchange="@OnUnitChanged" />
+
+                <label>Notes</label>
+                <textarea onchange="@OnNotesChanged">@newReading.Notes</textarea>
+
+                <button type="button" class="primary" onclick="@SaveReading">
+                    Save Reading
+                </button>
+
+                @if (!string.IsNullOrWhiteSpace(savedMessage))
+                {
+                    <div class="safe-card">@savedMessage</div>
+                }
+            </section>
+        }
+        else if (activeTab == "history")
+        {
+            <section class="panel">
+                <h3>History</h3>
+                @foreach (var h in history)
+                {
+                    <div class="history-row">
+                        <div>
+                            <strong>@h.Icon @h.Parameter</strong>
+                            <span>@h.ReadingTime.ToString("HH:mm")</span>
+                        </div>
+                        <div class="right">
+                            <strong>@h.Value @h.Unit</strong>
+                            <span class="ok">✓ In Range</span>
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+        else if (activeTab == "alerts")
+        {
+            <section class="panel">
+                <h3>Alerts</h3>
+                @foreach (var alert in alerts)
+                {
+                    <div class="alert-card">
+                        <strong>⚠ @alert.Title</strong>
+                        <p>@alert.Message</p>
+                        <span>@alert.Time.ToString("HH:mm")</span>
+                    </div>
+                }
+            </section>
+        }
+        else if (activeTab == "settings")
+        {
+            <section class="panel">
+                <h3>Settings</h3>
+                <div class="settings-row"><span>Facility</span><strong>Demo Facility</strong></div>
+                <div class="settings-row"><span>API Status</span><strong>Mock Data</strong></div>
+                <div class="settings-row"><span>Sync</span><strong>Ready</strong></div>
+            </section>
+        }
+    </main>
+        
+            
+    <nav class="bottom-nav">  
+
+        <button type="button" class="@HomeButtonClass" onclick="@ShowHome">
+            ⌂
+            <span>Home</span>
+        </button>
+
+        <button type="button" class="@ReadingsButtonClass" onclick="@ShowReadings">
+            ＋
+            <span>Readings</span>
+        </button>
+
+        <button type="button" class="@HistoryButtonClass" onclick="@ShowHistory">
+            🕘
+            <span>History</span>
+        </button>
+
+        <button type="button" class="@AlertsButtonClass" onclick="@ShowAlerts">
+            ⚠️
+            <span>Alerts</span>
+        </button>
+
+        <button type="button" class="@SettingsButtonClass" onclick="@ShowSettings">
+            ⚙️
+            <span>Settings</span>
+        </button>
+
+        
+    </nav>
+        
+    
+</div>
+
+@code {
+    private string activeTab = "home";
+    private CurrentRun? currentRun;
+    private List<ParameterReading> parameters = [];
+    private List<HistoryReading> history = [];
+    private List<TrackingAlert> alerts = [];
+    private ReadingInput newReading = new("pH", "", null, "");
+    private string? savedMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentRun = await DataService.GetCurrentRunAsync();
+        parameters = await DataService.GetParameterReadingsAsync();
+        history = await DataService.GetHistoryAsync();
+        alerts = await DataService.GetAlertsAsync();
+    }
+
+    private string HomeButtonClass => GetButtonClass("home");
+    private string ReadingsButtonClass => GetButtonClass("readings");
+    private string HistoryButtonClass => GetButtonClass("history");
+    private string AlertsButtonClass => GetButtonClass("alerts");
+    private string SettingsButtonClass => GetButtonClass("settings");
+
+    private void ShowHome()
+    {
+        SetTab("home");
+    }
+
+    private void ShowReadings()
+    {
+        SetTab("readings");
+    }
+
+    private void ShowHistory()
+    {
+        SetTab("history");
+    }
+
+    private void ShowAlerts()
+    {
+        SetTab("alerts");
+    }
+
+    private void ShowSettings()
+    {
+        SetTab("settings");
+    }
+
+    private void SetTab(string tab)
+    {
+        activeTab = tab;
+        savedMessage = null;
+        StateHasChanged();
+    }
+
+    private void OnParameterChanged(ChangeEventArgs e)
+    {
+        newReading = new ReadingInput(
+            e.Value?.ToString() ?? "",
+            newReading.Unit,
+            newReading.Value,
+            newReading.Notes
+        );
+    }
+
+    private void OnValueChanged(ChangeEventArgs e)
+    {
+        decimal? value = null;
+
+        if (decimal.TryParse(e.Value?.ToString(), out var parsedValue))
+        {
+            value = parsedValue;
+        }
+
+        newReading = new ReadingInput(
+            newReading.Parameter,
+            newReading.Unit,
+            value,
+            newReading.Notes
+        );
+    }
+
+    private void OnUnitChanged(ChangeEventArgs e)
+    {
+        newReading = new ReadingInput(
+            newReading.Parameter,
+            e.Value?.ToString() ?? "",
+            newReading.Value,
+            newReading.Notes
+        );
+    }
+
+    private void OnNotesChanged(ChangeEventArgs e)
+    {
+        newReading = new ReadingInput(
+            newReading.Parameter,
+            newReading.Unit,
+            newReading.Value,
+            e.Value?.ToString() ?? ""
+        );
+    }
+
+    private string GetButtonClass(string tab)
+    {
+        return activeTab == tab ? "active" : "";
+    }
+
+    private async Task SaveReading()
+    {
+        await DataService.SaveReadingAsync(newReading);
+        savedMessage = "Reading saved locally. Replace mock service with API sync.";
+    }
+
+    
+}

@@ -1,0 +1,4 @@
+﻿1>------ Deploy started: Project: DSE.MobileTrackingApp, Configuration: Debug Any CPU ------
+1>Waiting for emulator to be ready...
+Build has been canceled.
+========== Elapsed 18.570 seconds ==========
