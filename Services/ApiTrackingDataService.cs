@@ -12,6 +12,8 @@ public sealed class ApiTrackingDataService : ITrackingDataService
     private List<BasicMachineValuesDto>? _cachedValues;
     private DateTime _lastLoadedUtc;
 
+    public int SelectedLine { get; set; } = 1;
+
     public ApiTrackingDataService(HttpClient httpClient)
     {
         _httpClient = httpClient;
@@ -20,13 +22,13 @@ public sealed class ApiTrackingDataService : ITrackingDataService
     public async Task<CurrentRun> GetCurrentRunAsync()
     {
         var currentRun = await _httpClient.GetFromJsonAsync<CurrentRunDto>(
-            "api/mobile/current-run");
+            $"api/mobile/current-run?line={SelectedLine}");
 
         if (currentRun is null)
         {
             return new CurrentRun(
                 Facility: "BBI",
-                Packline: "Packline 1",
+                Packline: $"Packline {SelectedLine}",
                 Variety: "No Data",
                 BatchId: "-",
                 OperatorName: "David M",
@@ -60,6 +62,7 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             AddReading(readings, $"{prefix} Temperature", "🌡️", item.Temperature, "°C", 18.0m, 24.0m);
             AddReading(readings, $"{prefix} Tons/hr", "⚖️", item.TonsPerHour, "t/h", 0m, 100m);
             AddReading(readings, $"{prefix} Bin Count", "📦", item.BinCountSinceLastReset, "bins", 0m, 999999m);
+            AddReading(readings, $"{prefix} Wax", "🛢️", item.LitresPerTon, "L/Ton", 0.8m, 1.5m);
         }
 
         return readings;
@@ -80,6 +83,7 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             AddHistory(history, $"{prefix} Temperature", "🌡️", item.Temperature, "°C", readingTime, 18.0m, 24.0m);
             AddHistory(history, $"{prefix} Tons/hr", "⚖️", item.TonsPerHour, "t/h", readingTime, 0m, 100m);
             AddHistory(history, $"{prefix} Bin Count", "📦", item.BinCountSinceLastReset, "bins", readingTime, 0m, 999999m);
+            AddHistory(history, $"{prefix} Wax", "🛢️", item.LitresPerTon, "L/Ton", readingTime, 0.8m, 1.5m);
         }
 
         return history
@@ -115,18 +119,25 @@ public sealed class ApiTrackingDataService : ITrackingDataService
         return Task.CompletedTask;
     }
 
+    private int _cachedLine;
     private async Task<List<BasicMachineValuesDto>> GetLatestValuesAsync()
     {
-        if (_cachedValues is not null && DateTime.UtcNow.Subtract(_lastLoadedUtc).TotalSeconds < 5)
+        
+
+        if (_cachedValues is not null &&
+            _cachedLine == SelectedLine &&
+            DateTime.UtcNow.Subtract(_lastLoadedUtc).TotalSeconds < 5)
         {
             return _cachedValues;
         }
 
         var values = await _httpClient.GetFromJsonAsync<List<BasicMachineValuesDto>>(
-            "api/mobile/latest-basic-values");
+            $"api/mobile/latest-basic-values?line={SelectedLine}");
 
         _cachedValues = values ?? new List<BasicMachineValuesDto>();
         _lastLoadedUtc = DateTime.UtcNow;
+
+        _cachedLine = SelectedLine;
 
         return _cachedValues;
     }

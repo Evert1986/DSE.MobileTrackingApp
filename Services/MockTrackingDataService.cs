@@ -4,6 +4,7 @@ namespace DSE.MobileTrackingApp.Services;
 
 public class MockTrackingDataService : ITrackingDataService
 {
+    public int SelectedLine { get; set; } = 1;
     public Task<CurrentRun> GetCurrentRunAsync()
     {
         return Task.FromResult(new CurrentRun(

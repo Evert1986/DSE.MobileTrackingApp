@@ -10,4 +10,6 @@ public sealed class BasicMachineValuesDto
     public decimal? Temperature { get; set; }
     public decimal? TonsPerHour { get; set; }
     public decimal? BinCountSinceLastReset { get; set; }
+
+    public decimal? LitresPerTon { get; set; }
 }

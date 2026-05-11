@@ -6,10 +6,19 @@
             <div class="muted">@currentRun?.Facility</div>
             <h1>@currentRun?.Packline</h1>
         </div>
-        <button class="bell">🔔</button>
 
-       
+        <div class="top-actions">
+            <button type="button" class="line-menu-button" onclick="@ToggleLineMenu">⋯</button>
+            <button type="button" class="bell">🔔</button>
 
+            @if (showLineMenu)
+            {
+                <div class="line-menu">
+                    <button type="button" onclick="@SelectPackline1">Packline 1</button>
+                    <button type="button" onclick="@SelectPackline2">Packline 2</button>
+                </div>
+            }
+        </div>
     </div>
 
     <main class="screen">
@@ -163,6 +172,10 @@
 </div>
 
 @code {
+
+    private int selectedLine = 1;
+    private bool showLineMenu;
+
     private string activeTab = "home";
     private CurrentRun? currentRun;
     private List<ParameterReading> parameters = [];
@@ -172,6 +185,12 @@
     private string? savedMessage;
 
     protected override async Task OnInitializedAsync()
+    {
+        DataService.SelectedLine = selectedLine;
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
     {
         currentRun = await DataService.GetCurrentRunAsync();
         parameters = await DataService.GetParameterReadingsAsync();
@@ -275,5 +294,29 @@
         savedMessage = "Reading saved locally. Replace mock service with API sync.";
     }
 
+    private void ToggleLineMenu()
+    {
+        showLineMenu = !showLineMenu;
+    }
+
+    private async Task SelectPackline1()
+    {
+        await SelectPacklineAsync(1);
+    }
+
+    private async Task SelectPackline2()
+    {
+        await SelectPacklineAsync(2);
+    }
+
+    private async Task SelectPacklineAsync(int line)
+    {
+        selectedLine = line;
+        DataService.SelectedLine = line;
+        showLineMenu = false;
+
+        await LoadDataAsync();
+        StateHasChanged();
+    }
     
 }

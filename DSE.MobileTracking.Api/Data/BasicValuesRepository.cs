@@ -31,7 +31,8 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         var results = new List<BasicMachineValuesDto>
     {
         await GetLatestFromTableAsync(connection, $"DosingMachine{line}", line, "Dosing"),
-        await GetLatestFromTableAsync(connection, $"DrenchDosingMachine{line}", line, "Drench Dosing")
+        await GetLatestFromTableAsync(connection, $"DrenchDosingMachine{line}", line, "Drench Dosing"),
+        await GetLatestWaxFromTableAsync(connection, $"WaxMachine{line}", line, "Wax")
     };
 
         return results;
@@ -114,6 +115,41 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             [Temperature],
             [TonsPerHour],
             [BinCountSinceLastReset]
+        FROM [dbo].[{tableName}]
+        ORDER BY [DateOfLog] DESC;
+        """;
+
+        var result = await connection.QuerySingleOrDefaultAsync<BasicMachineValuesDto>(
+            sql,
+            new
+            {
+                Line = line,
+                MachineType = machineType
+            });
+
+        return result ?? new BasicMachineValuesDto
+        {
+            MachineName = tableName,
+            Line = line,
+            MachineType = machineType
+        };
+
+
+    }
+
+    private static async Task<BasicMachineValuesDto> GetLatestWaxFromTableAsync(
+    System.Data.IDbConnection connection,
+    string tableName,
+    int line,
+    string machineType)
+    {
+        var sql = $"""
+        SELECT TOP 1
+            '{tableName}' AS MachineName,
+            @Line AS Line,
+            @MachineType AS MachineType,
+            [DateOfLog],
+            [litresPerTon] AS LitresPerTon
         FROM [dbo].[{tableName}]
         ORDER BY [DateOfLog] DESC;
         """;
