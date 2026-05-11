@@ -2,15 +2,19 @@
 using Dapper;
 using DSE.MobileTracking.Api.Models;
 
+
+
 namespace DSE.MobileTracking.Api.Data;
 
 public interface IBasicValuesRepository
 {
     Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync();
+    Task<CurrentRunDto> GetCurrentRunAsync();
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
 {
+
     private readonly ISqlConnectionFactory _connectionFactory;
 
     public BasicValuesRepository(ISqlConnectionFactory connectionFactory)
@@ -31,6 +35,61 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         };
 
         return results;
+    }
+
+    public async Task<CurrentRunDto> GetCurrentRunAsync()
+    {
+        const string sql = """
+            SELECT TOP 1
+                [CurrentBatchId],
+                [CurrentBatchVarietyName],
+                [CurrentBatchStartTime],
+                [ActualStatus]
+            FROM [dbo].[SizerOnlyDataLine1]
+            ORDER BY [DateOfLog] DESC;
+            """;
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        var row = await connection.QuerySingleOrDefaultAsync<SizerCurrentRunRow>(sql);
+
+        if (row is null)
+        {
+            return new CurrentRunDto
+            {
+                Facility = "BBI",
+                Packline = "Packline 1",
+                Variety = "No Data",
+                BatchId = "-",
+                OperatorName = "David M",
+                StartTime = DateTime.Now,
+                ActualStatus = "STOPPED",
+                IsRunning = false
+            };
+        }
+
+        var actualStatus = row.ActualStatus?.Trim() ?? "";
+        var isRunning = actualStatus.Equals("RUNNING", StringComparison.OrdinalIgnoreCase);
+
+        return new CurrentRunDto
+        {
+            Facility = "BBI",
+            Packline = "Packline 1",
+            Variety = row.CurrentBatchVarietyName ?? "",
+            BatchId = row.CurrentBatchId ?? "",
+            OperatorName = "David M",
+            StartTime = row.CurrentBatchStartTime ?? DateTime.Now,
+            ActualStatus = string.IsNullOrWhiteSpace(actualStatus) ? "STOPPED" : actualStatus.ToUpperInvariant(),
+            IsRunning = isRunning
+        };
+    }
+
+    private sealed class SizerCurrentRunRow
+    {
+        public string? CurrentBatchId { get; set; }
+        public string? CurrentBatchVarietyName { get; set; }
+        public DateTime? CurrentBatchStartTime { get; set; }
+        public string? ActualStatus { get; set; }
     }
 
     private static async Task<BasicMachineValuesDto> GetLatestFromTableAsync(

@@ -2,3 +2,8 @@
 bin/
 obj/
 *.user
+
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/

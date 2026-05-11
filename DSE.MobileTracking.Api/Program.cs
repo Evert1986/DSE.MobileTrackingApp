@@ -62,4 +62,10 @@ app.MapGet("/api/mobile/latest-basic-values", async (IBasicValuesRepository repo
     return Results.Ok(result);
 });
 
+app.MapGet("/api/mobile/current-run", async (IBasicValuesRepository repository) =>
+{
+    var result = await repository.GetCurrentRunAsync();
+    return Results.Ok(result);
+});
+
 app.Run();
