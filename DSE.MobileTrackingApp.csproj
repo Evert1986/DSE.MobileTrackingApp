@@ -33,4 +33,16 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="DSE.MobileTracking.Api\**\*.cs" />
+		<None Remove="DSE.MobileTracking.Api\**" />
+		<Content Remove="DSE.MobileTracking.Api\**" />
+		<EmbeddedResource Remove="DSE.MobileTracking.Api\**" />
+
+		<MauiXaml Remove="DSE.MobileTracking.Api\**\*.xaml" />
+		<MauiAsset Remove="DSE.MobileTracking.Api\**" />
+		<MauiImage Remove="DSE.MobileTracking.Api\**" />
+		<MauiFont Remove="DSE.MobileTracking.Api\**" />
+	</ItemGroup>
+
 </Project>

@@ -20,7 +20,7 @@ public static class MauiProgram
         // Live API data
         builder.Services.AddHttpClient<ITrackingDataService, ApiTrackingDataService>(client =>
         {
-            client.BaseAddress = new Uri("http://10.0.2.2:5116/");
+            client.BaseAddress = new Uri("https://dse-mobiletracking-api-gqhfcuafc2apcwa5.southafricanorth-01.azurewebsites.net/");
         });
 
 #if DEBUG

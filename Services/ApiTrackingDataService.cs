@@ -25,11 +25,11 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             .FirstOrDefault();
 
         return new CurrentRun(
-            Facility: "Demo Facility",
-            Packline: latest is null ? "Live API" : $"{latest.MachineType} Line {latest.Line}",
+            Facility: "BBI",
+            Packline: "Packline 1",
             Variety: "Live SQL Data",
             BatchId: latest?.MachineName ?? "-",
-            OperatorName: "Azure SQL API",
+            OperatorName: "David M",
             StartTime: latest?.DateOfLog ?? DateTime.Now,
             IsRunning: latest is not null
         );
