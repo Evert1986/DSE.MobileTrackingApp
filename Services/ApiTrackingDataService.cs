@@ -139,23 +139,21 @@ public sealed class ApiTrackingDataService : ITrackingDataService
 
     public async Task SaveReadingAsync(ReadingInput input)
     {
-        if (!input.Parameter.Equals("Titration", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
         if (!input.Value.HasValue)
         {
             return;
         }
 
-        var request = new TitrationInputDto
+        var field = NormalizeAppDataField(input.Parameter);
+
+        var request = new AppDataInputDto
         {
             Line = SelectedLine,
-            Titration = input.Value.Value
+            Field = field,
+            Value = input.Value.Value
         };
 
-        var response = await _httpClient.PostAsJsonAsync("api/mobile/titration", request);
+        var response = await _httpClient.PostAsJsonAsync("api/mobile/app-data", request);
 
         response.EnsureSuccessStatusCode();
 
@@ -256,5 +254,19 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             readingTime,
             value.Value >= targetMin && value.Value <= targetMax
         ));
+    }
+
+    private static string NormalizeAppDataField(string parameter)
+    {
+        return parameter switch
+        {
+            "Titration" => "Titration",
+            "Temperature" => "Temperature",
+            "pH" => "pH",
+            "Wax" => "Wax",
+            "DrenchDose" => "DrenchDose",
+            "Drench Dose" => "DrenchDose",
+            _ => parameter
+        };
     }
 }

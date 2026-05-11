@@ -69,8 +69,8 @@ app.MapGet("/api/mobile/current-run", async (int? line, IBasicValuesRepository r
     return Results.Ok(result);
 });
 
-app.MapPost("/api/mobile/titration", async (
-    TitrationInputDto input,
+app.MapPost("/api/mobile/app-data", async (
+    AppDataInputDto input,
     IBasicValuesRepository repository) =>
 {
     if (input.Line != 1 && input.Line != 2)
@@ -81,13 +81,22 @@ app.MapPost("/api/mobile/titration", async (
         });
     }
 
-    await repository.SaveTitrationAsync(input.Line, input.Titration);
+    if (string.IsNullOrWhiteSpace(input.Field))
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Field is required."
+        });
+    }
+
+    await repository.SaveAppDataAsync(input.Line, input.Field, input.Value);
 
     return Results.Ok(new
     {
-        Status = "Titration saved",
+        Status = "App data saved",
         Line = input.Line,
-        Titration = input.Titration,
+        Field = input.Field,
+        Value = input.Value,
         TimeUtc = DateTime.UtcNow
     });
 });

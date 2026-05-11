@@ -67,18 +67,18 @@
 
                 <label>Parameter</label>
                 <select value="@newReading.Parameter" onchange="@OnParameterChanged">
-                    <option value="pH">pH</option>
-                    <option value="Temperature">Temperature</option>
                     <option value="Titration">Titration</option>
+                    <option value="Temperature">Temperature</option>
+                    <option value="pH">pH</option>
                     <option value="Wax">Wax</option>
-                    <option value="Drench Dose">Drench Dose</option>
+                    <option value="DrenchDose">DrenchDose</option>
                 </select>
 
                 <label>Value</label>
                 <input type="number" step="0.01" value="@newReading.Value" onchange="@OnValueChanged" />
 
-                <label>Unit</label>
-                <input value="@newReading.Unit" onchange="@OnUnitChanged" />
+                @* <label>Unit</label>
+                <input value="@newReading.Unit" onchange="@OnUnitChanged" /> *@
 
                 <label>Notes</label>
                 <textarea onchange="@OnNotesChanged">@newReading.Notes</textarea>
@@ -290,8 +290,19 @@
 
     private async Task SaveReading()
     {
-        await DataService.SaveReadingAsync(newReading);
-        savedMessage = "Reading saved locally. Replace mock service with API sync.";
+        try
+        {
+            await DataService.SaveReadingAsync(newReading);
+
+            savedMessage = "Reading saved to cloud successfully.";
+
+            // Optional: reload latest data so the new titration appears immediately
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            savedMessage = $"Failed to save reading: {ex.Message}";
+        }
     }
 
     private void ToggleLineMenu()

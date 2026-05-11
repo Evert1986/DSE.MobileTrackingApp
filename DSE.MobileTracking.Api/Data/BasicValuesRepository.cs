@@ -10,7 +10,7 @@ public interface IBasicValuesRepository
 {
     Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync(int line);
     Task<CurrentRunDto> GetCurrentRunAsync(int line);
-    Task SaveTitrationAsync(int line, decimal titration);
+    Task SaveAppDataAsync(int line, string field, decimal value);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -184,8 +184,9 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             @Line AS Line,
             @MachineType AS MachineType,
             [DateOfLog],
-            [Titration]
+            [Value] AS Titration
         FROM [dbo].[{tableName}]
+        WHERE [Field] = 'Titration'
         ORDER BY [DateOfLog] DESC;
         """;
 
@@ -205,21 +206,37 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
         };
     }
 
-    public async Task SaveTitrationAsync(int line, decimal titration)
+    public async Task SaveAppDataAsync(int line, string field, decimal value)
     {
         line = NormalizeLine(line);
+
+        var allowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Titration",
+            "Temperature",
+            "pH",
+            "Wax",
+            "DrenchDose"
+        };
+
+        if (!allowedFields.Contains(field))
+        {
+            throw new InvalidOperationException($"Invalid app data field: {field}");
+        }
 
         var tableName = $"Line{line}AppData";
 
         var sql = $"""
         INSERT INTO [dbo].[{tableName}]
         (
-            [Titration],
+            [Field],
+            [Value],
             [DateOfLog]
         )
         VALUES
         (
-            @Titration,
+            @Field,
+            @Value,
             CAST(SYSUTCDATETIME() AT TIME ZONE 'UTC' AT TIME ZONE 'South Africa Standard Time' AS datetime)
         );
         """;
@@ -228,7 +245,8 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
 
         await connection.ExecuteAsync(sql, new
         {
-            Titration = titration
+            Field = field,
+            Value = value
         });
     }
 
