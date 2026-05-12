@@ -160,3 +160,66 @@ textarea{ min-height:90px; resize:none; }
     .bottom-nav button.active {
         color: #168FFF !important;
     }
+
+.reading-panel {
+    padding: 18px;
+}
+
+.section-title {
+    color: #EAF3FF;
+    font-size: 15px;
+    font-weight: 800;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.reading-details-title {
+    margin-top: 26px;
+}
+
+.parameter-select-list {
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.06);
+}
+
+.parameter-option {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    background: rgba(255,255,255,.025);
+    color: white;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 750;
+    text-align: left;
+}
+
+    .parameter-option:last-child {
+        border-bottom: 0;
+    }
+
+    .parameter-option.selected {
+        background: rgba(24,160,255,.16);
+        color: #FFFFFF;
+    }
+
+.option-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(24,160,255,.16);
+    font-size: 18px;
+}
+
+input[readonly] {
+    opacity: .95;
+}

@@ -101,4 +101,13 @@ app.MapPost("/api/mobile/app-data", async (
     });
 });
 
+app.MapGet("/api/mobile/ph-history", async (
+    int? line,
+    int? take,
+    IBasicValuesRepository repository) =>
+{
+    var result = await repository.GetPhHistoryAsync(line ?? 1, take ?? 30);
+    return Results.Ok(result);
+});
+
 app.Run();

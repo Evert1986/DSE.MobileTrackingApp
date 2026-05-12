@@ -11,6 +11,7 @@ public interface IBasicValuesRepository
     Task<IReadOnlyList<BasicMachineValuesDto>> GetLatestBasicValuesAsync(int line);
     Task<CurrentRunDto> GetCurrentRunAsync(int line);
     Task SaveAppDataAsync(int line, string field, decimal value);
+    Task<IReadOnlyList<PhHistoryPointDto>> GetPhHistoryAsync(int line, int take);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -248,6 +249,39 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             Field = field,
             Value = value
         });
+    }
+
+    public async Task<IReadOnlyList<PhHistoryPointDto>> GetPhHistoryAsync(int line, int take)
+    {
+        line = NormalizeLine(line);
+        take = Math.Clamp(take, 1, 100);
+
+        var tableName = $"DosingMachine{line}";
+
+        var sql = $"""
+            SELECT TOP (@Take)
+                [DateOfLog],
+                [PH]
+            FROM [dbo].[{tableName}]
+            WHERE [PH] IS NOT NULL
+            ORDER BY [DateOfLog] DESC;
+            """;
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        var rows = await connection.QueryAsync<PhHistoryPointDto>(sql, new
+        {
+            Take = take
+        });
+
+        return rows
+            .Select(x =>
+            {
+                x.IsInRange = x.PH >= 5.0m && x.PH <= 7.0m;
+                return x;
+            })
+            .OrderBy(x => x.DateOfLog)
+            .ToList();
     }
 
     private static int NormalizeLine(int line)

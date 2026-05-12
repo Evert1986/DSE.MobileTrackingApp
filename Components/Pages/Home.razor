@@ -62,26 +62,53 @@
         }
         else if (activeTab == "readings")
         {
-            <section class="panel">
+            <section class="panel reading-panel">
                 <h3>Add Reading</h3>
 
-                <label>Parameter</label>
-                <select value="@newReading.Parameter" onchange="@OnParameterChanged">
-                    <option value="Titration">Titration</option>
-                    <option value="Temperature">Temperature</option>
-                    <option value="pH">pH</option>
-                    <option value="Wax">Wax</option>
-                    <option value="DrenchDose">DrenchDose</option>
-                </select>
+                <div class="section-title">Select Parameter</div>
+
+                <div class="parameter-select-list">
+                    <button type="button" class="@PhOptionClass" onclick="@SelectPh">
+                        <span class="option-icon">💧</span>
+                        <span>pH</span>
+                    </button>
+
+                    <button type="button" class="@TemperatureOptionClass" onclick="@SelectTemperature">
+                        <span class="option-icon">🌡️</span>
+                        <span>Temperature</span>
+                    </button>
+
+                    <button type="button" class="@TitrationOptionClass" onclick="@SelectTitration">
+                        <span class="option-icon">🧪</span>
+                        <span>Titration</span>
+                    </button>
+
+                    <button type="button" class="@WaxOptionClass" onclick="@SelectWax">
+                        <span class="option-icon">🪣</span>
+                        <span>Wax</span>
+                    </button>
+
+                    <button type="button" class="@DrenchDoseOptionClass" onclick="@SelectDrenchDose">
+                        <span class="option-icon">💧</span>
+                        <span>Drench Dose</span>
+                    </button>
+                </div>
+
+                <div class="section-title reading-details-title">Reading Details</div>
 
                 <label>Value</label>
-                <input type="number" step="0.01" value="@newReading.Value" onchange="@OnValueChanged" />
+                <input type="number"
+                       step="0.01"
+                       placeholder="Enter value"
+                       value="@newReading.Value"
+                       onchange="@OnValueChanged" />
 
                 @* <label>Unit</label>
-                <input value="@newReading.Unit" onchange="@OnUnitChanged" /> *@
+                <input value="@newReading.Unit" readonly /> *@
 
-                <label>Notes</label>
-                <textarea onchange="@OnNotesChanged">@newReading.Notes</textarea>
+                <label>Notes (Optional)</label>
+                <textarea placeholder="Add a note"
+                          onchange="@OnNotesChanged">@newReading.Notes</textarea>
 
                 <button type="button" class="primary" onclick="@SaveReading">
                     Save Reading
@@ -327,6 +354,57 @@
         showLineMenu = false;
 
         await LoadDataAsync();
+        StateHasChanged();
+    }
+
+    private string PhOptionClass => GetParameterOptionClass("pH");
+    private string TemperatureOptionClass => GetParameterOptionClass("Temperature");
+    private string TitrationOptionClass => GetParameterOptionClass("Titration");
+    private string WaxOptionClass => GetParameterOptionClass("Wax");
+    private string DrenchDoseOptionClass => GetParameterOptionClass("DrenchDose");
+
+    private string GetParameterOptionClass(string parameter)
+    {
+        return newReading.Parameter == parameter
+            ? "parameter-option selected"
+            : "parameter-option";
+    }
+
+    private void SelectPh()
+    {
+        SetReadingParameter("pH", "");
+    }
+
+    private void SelectTemperature()
+    {
+        SetReadingParameter("Temperature", "°C");
+    }
+
+    private void SelectTitration()
+    {
+        SetReadingParameter("Titration", "ppm");
+    }
+
+    private void SelectWax()
+    {
+        SetReadingParameter("Wax", "L/Ton");
+    }
+
+    private void SelectDrenchDose()
+    {
+        SetReadingParameter("DrenchDose", "");
+    }
+
+    private void SetReadingParameter(string parameter, string unit)
+    {
+        newReading = new ReadingInput(
+            parameter,
+            unit,
+            newReading.Value,
+            newReading.Notes
+        );
+
+        savedMessage = null;
         StateHasChanged();
     }
     
