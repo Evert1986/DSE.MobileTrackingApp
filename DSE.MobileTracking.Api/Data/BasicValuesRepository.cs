@@ -12,6 +12,7 @@ public interface IBasicValuesRepository
     Task<CurrentRunDto> GetCurrentRunAsync(int line);
     Task SaveAppDataAsync(int line, string field, decimal value);
     Task<IReadOnlyList<PhHistoryPointDto>> GetPhHistoryAsync(int line, int take);
+    Task<IReadOnlyList<MetricHistoryPointDto>> GetMetricHistoryAsync(int line, string metric, int take);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -278,6 +279,78 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             .Select(x =>
             {
                 x.IsInRange = x.PH >= 5.0m && x.PH <= 7.0m;
+                return x;
+            })
+            .OrderBy(x => x.DateOfLog)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<MetricHistoryPointDto>> GetMetricHistoryAsync(int line, string metric, int take)
+    {
+        line = NormalizeLine(line);
+        take = Math.Clamp(take, 1, 100);
+
+        var metricKey = metric.Trim().ToLowerInvariant();
+
+        string tableName;
+        string columnName;
+        decimal targetMin;
+        decimal targetMax;
+
+        switch (metricKey)
+        {
+            case "ph":
+                tableName = $"DosingMachine{line}";
+                columnName = "PH";
+                targetMin = 5.0m;
+                targetMax = 7.0m;
+                break;
+
+            case "temperature":
+                tableName = $"DosingMachine{line}";
+                columnName = "Temperature";
+                targetMin = 18.0m;
+                targetMax = 24.0m;
+                break;
+
+            case "tons":
+                tableName = $"DosingMachine{line}";
+                columnName = "TonsPerHour";
+                targetMin = 0m;
+                targetMax = 100m;
+                break;
+
+            case "wax":
+                tableName = $"WaxMachine{line}";
+                columnName = "litresPerTon";
+                targetMin = 0.8m;
+                targetMax = 1.5m;
+                break;
+
+            default:
+                throw new InvalidOperationException($"Unsupported metric: {metric}");
+        }
+
+        var sql = $"""
+        SELECT TOP (@Take)
+            [DateOfLog],
+            [{columnName}] AS [Value]
+        FROM [dbo].[{tableName}]
+        WHERE [{columnName}] IS NOT NULL
+        ORDER BY [DateOfLog] DESC;
+        """;
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        var rows = await connection.QueryAsync<MetricHistoryPointDto>(sql, new
+        {
+            Take = take
+        });
+
+        return rows
+            .Select(x =>
+            {
+                x.IsInRange = x.Value >= targetMin && x.Value <= targetMax;
                 return x;
             })
             .OrderBy(x => x.DateOfLog)

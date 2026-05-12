@@ -269,4 +269,20 @@ public sealed class ApiTrackingDataService : ITrackingDataService
             _ => parameter
         };
     }
+
+    public async Task<List<PhHistoryPointDto>> GetPhHistoryAsync()
+    {
+        var result = await _httpClient.GetFromJsonAsync<List<PhHistoryPointDto>>(
+            $"api/mobile/ph-history?line={SelectedLine}&take=30");
+
+        return result ?? new List<PhHistoryPointDto>();
+    }
+
+    public async Task<List<MetricHistoryPointDto>> GetMetricHistoryAsync(string metric)
+    {
+        var result = await _httpClient.GetFromJsonAsync<List<MetricHistoryPointDto>>(
+            $"api/mobile/metric-history?line={SelectedLine}&metric={Uri.EscapeDataString(metric)}&take=30");
+
+        return result ?? new List<MetricHistoryPointDto>();
+    }
 }

@@ -50,6 +50,44 @@ public class MockTrackingDataService : ITrackingDataService
         });
     }
 
+    public Task<List<PhHistoryPointDto>> GetPhHistoryAsync()
+    {
+        var now = DateTime.Now;
+
+        var values = Enumerable.Range(0, 30)
+            .Select(i => new PhHistoryPointDto
+            {
+                DateOfLog = now.AddMinutes(-30 * (29 - i)),
+                PH = 5.5m + ((i % 5) * 0.1m),
+                IsInRange = true
+            })
+            .ToList();
+
+        return Task.FromResult(values);
+    }
+
+    public Task<List<MetricHistoryPointDto>> GetMetricHistoryAsync(string metric)
+    {
+        var now = DateTime.Now;
+
+        var values = Enumerable.Range(0, 30)
+            .Select(i => new MetricHistoryPointDto
+            {
+                DateOfLog = now.AddMinutes(-5 * (29 - i)),
+                Value = metric switch
+                {
+                    "Temperature" => 22m + ((i % 5) * 0.2m),
+                    "Tons" => 18m + ((i % 5) * 0.5m),
+                    "Wax" => 1.1m + ((i % 5) * 0.02m),
+                    _ => 5.8m + ((i % 5) * 0.05m)
+                },
+                IsInRange = true
+            })
+            .ToList();
+
+        return Task.FromResult(values);
+    }
+
     public Task SaveReadingAsync(ReadingInput input)
     {
         return Task.CompletedTask;

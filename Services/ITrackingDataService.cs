@@ -10,5 +10,7 @@ public interface ITrackingDataService
     Task<List<HistoryReading>> GetHistoryAsync();
     Task<List<TrackingAlert>> GetAlertsAsync();
     Task SaveReadingAsync(ReadingInput input);
-    
+    Task<List<PhHistoryPointDto>> GetPhHistoryAsync();
+    Task<List<MetricHistoryPointDto>> GetMetricHistoryAsync(string metric);
+
 }

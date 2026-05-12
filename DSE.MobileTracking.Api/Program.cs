@@ -110,4 +110,32 @@ app.MapGet("/api/mobile/ph-history", async (
     return Results.Ok(result);
 });
 
+app.MapGet("/api/mobile/metric-history", async (
+    int? line,
+    string? metric,
+    int? take,
+    IBasicValuesRepository repository) =>
+{
+    if (string.IsNullOrWhiteSpace(metric))
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Metric is required."
+        });
+    }
+
+    try
+    {
+        var result = await repository.GetMetricHistoryAsync(line ?? 1, metric, take ?? 30);
+        return Results.Ok(result);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new
+        {
+            Error = ex.Message
+        });
+    }
+});
+
 app.Run();

@@ -1,28 +1,108 @@
+@using DSE.MobileTrackingApp.Models
 @inject ITrackingDataService DataService
 
 <div class="app">
-    <div class="top">
-        <div>
-            <div class="muted">@currentRun?.Facility</div>
-            <h1>@currentRun?.Packline</h1>
-        </div>
+    @if (!showMetricDetails)
+    {
+        <div class="top">
+            <div>
+                <div class="muted">@currentRun?.Facility</div>
+                <h1>@currentRun?.Packline</h1>
+            </div>
 
-        <div class="top-actions">
-            <button type="button" class="line-menu-button" onclick="@ToggleLineMenu">⋯</button>
-            <button type="button" class="bell">🔔</button>
+            <div class="top-actions">
+                <button type="button" class="line-menu-button" onclick="@ToggleLineMenu">⋯</button>
+                <button type="button" class="bell">🔔</button>
 
-            @if (showLineMenu)
-            {
-                <div class="line-menu">
-                    <button type="button" onclick="@SelectPackline1">Packline 1</button>
-                    <button type="button" onclick="@SelectPackline2">Packline 2</button>
-                </div>
-            }
+                @if (showLineMenu)
+                {
+                    <div class="line-menu">
+                        <button type="button" onclick="@SelectPackline1">Packline 1</button>
+                        <button type="button" onclick="@SelectPackline2">Packline 2</button>
+                    </div>
+                }
+            </div>
         </div>
-    </div>
+    }
 
     <main class="screen">
-        @if (activeTab == "home")
+        @if (showMetricDetails)
+        {
+            <section class="panel ph-detail-panel">
+                <div class="detail-header">
+                    <button type="button" class="back-button" onclick="@BackToHome">←</button>
+                    <h3>@selectedMetricName</h3>
+                    <span class="time-filter">Today⌄</span>
+                </div>
+
+                <div class="latest-card">
+                    <div>
+                        <div class="muted">Latest Reading</div>
+                        <div class="latest-value">
+                            @LatestMetric.ToString("0.###")
+                            <small>@selectedMetricUnit</small>
+                        </div>
+                        <div class="target">@LatestMetricTimeText</div>
+                    </div>
+
+                    <div class="range-status">
+                        @LatestMetricRangeText
+                    </div>
+                </div>
+
+                <h3 class="detail-section-title">Trend</h3>
+
+                <div class="chart-card">
+                    <svg viewBox="0 0 340 155" preserveAspectRatio="none" class="ph-chart">
+                        <text x="2" y="18" class="chart-y-label">@ChartMaxValue.ToString("0.##")</text>
+                        <text x="2" y="78" class="chart-y-label">@ChartMidValue.ToString("0.##")</text>
+                        <text x="2" y="138" class="chart-y-label">@ChartMinValue.ToString("0.##")</text>
+
+                        <line x1="36" y1="10" x2="330" y2="10" class="chart-grid" />
+                        <line x1="36" y1="70" x2="330" y2="70" class="chart-grid" />
+                        <line x1="36" y1="130" x2="330" y2="130" class="chart-grid" />
+
+                        <polyline points="@BuildMetricPolyline()" class="chart-line" />
+                    </svg>
+
+                    <div class="chart-labels chart-labels-four">
+                        <span>@GetMetricTimeLabelAtPosition(0)</span>
+                        <span>@GetMetricTimeLabelAtPosition(1)</span>
+                        <span>@GetMetricTimeLabelAtPosition(2)</span>
+                        <span>@GetMetricTimeLabelAtPosition(3)</span>
+                    </div>
+                </div>
+
+                <div class="summary-grid">
+                    <div>
+                        <div class="muted">Target Range</div>
+                        <strong>
+                            @selectedMetricTargetMin.ToString("0.##") - @selectedMetricTargetMax.ToString("0.##")
+                        </strong>
+                    </div>
+                    <div>
+                        <div class="muted">Average</div>
+                        <strong>@AverageMetric.ToString("0.##")</strong>
+                    </div>
+                </div>
+
+                <h3 class="detail-section-title">Recent Readings</h3>
+
+                <div class="recent-list">
+                    @foreach (var r in metricHistory
+                        .OrderByDescending(x => x.DateOfLog)
+                        .Take(5))
+                    {
+                        <div class="recent-row">
+                            <strong>@r.Value.ToString("0.###")</strong>
+                            <span>@FormatTodayTime(r.DateOfLog)</span>
+                            <span class="ok">@(r.IsInRange ? "✓ In Range" : "⚠ Out")</span>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+        else if (activeTab == "home")
         {
             <section class="run-card">
                 <div class="row between">
@@ -30,14 +110,25 @@
                         <div class="muted">Current Run</div>
                         <h2>@currentRun?.Variety</h2>
                     </div>
+
                     <span class="@(currentRun?.IsRunning == true ? "status running" : "status stopped")">
                         @(currentRun?.IsRunning == true ? "RUNNING" : "STOPPED")
                     </span>
                 </div>
+
                 <div class="run-grid">
-                    <div><span>Start</span><strong>@currentRun?.StartTime.ToString("HH:mm")</strong></div>
-                    <div><span>Batch</span><strong>@currentRun?.BatchId</strong></div>
-                    <div><span>Operator</span><strong>@currentRun?.OperatorName</strong></div>
+                    <div>
+                        <span>Start</span>
+                        <strong>@currentRun?.StartTime.ToString("HH:mm")</strong>
+                    </div>
+                    <div>
+                        <span>Batch</span>
+                        <strong>@currentRun?.BatchId</strong>
+                    </div>
+                    <div>
+                        <span>Operator</span>
+                        <strong>@currentRun?.OperatorName</strong>
+                    </div>
                 </div>
             </section>
 
@@ -46,19 +137,71 @@
                     <h3>Key Parameters</h3>
                     <a>Live</a>
                 </div>
+
                 @foreach (var p in parameters)
                 {
-                    <div class="parameter-card">
-                        <div>
-                            <div class="parameter-name">@p.Icon @p.Name</div>
-                            <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                    if (string.Equals(p.Name, "pH", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button" class="parameter-card parameter-button" onclick="@OpenPhDetails">
+                            <div>
+                                <div class="parameter-name">@p.Icon @p.Name</div>
+                                <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                            </div>
+                            <div class="value">
+                                @p.Value <small>@p.Unit</small>
+                            </div>
+                        </button>
+                    }
+                    else if (string.Equals(p.Name, "Temperature", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button" class="parameter-card parameter-button" onclick="@OpenTemperatureDetails">
+                            <div>
+                                <div class="parameter-name">@p.Icon @p.Name</div>
+                                <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                            </div>
+                            <div class="value">
+                                @p.Value <small>@p.Unit</small>
+                            </div>
+                        </button>
+                    }
+                    else if (string.Equals(p.Name, "Tons", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button" class="parameter-card parameter-button" onclick="@OpenTonsDetails">
+                            <div>
+                                <div class="parameter-name">@p.Icon @p.Name</div>
+                                <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                            </div>
+                            <div class="value">
+                                @p.Value <small>@p.Unit</small>
+                            </div>
+                        </button>
+                    }
+                    else if (string.Equals(p.Name, "Wax", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button" class="parameter-card parameter-button" onclick="@OpenWaxDetails">
+                            <div>
+                                <div class="parameter-name">@p.Icon @p.Name</div>
+                                <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                            </div>
+                            <div class="value">
+                                @p.Value <small>@p.Unit</small>
+                            </div>
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="parameter-card">
+                            <div>
+                                <div class="parameter-name">@p.Icon @p.Name</div>
+                                <div class="target">Target: @p.TargetMin - @p.TargetMax</div>
+                            </div>
+                            <div class="value">
+                                @p.Value <small>@p.Unit</small>
+                            </div>
                         </div>
-                        <div class="value">@p.Value <small>@p.Unit</small></div>
-                    </div>
+                    }
                 }
             </section>
-
-            
         }
         else if (activeTab == "readings")
         {
@@ -103,9 +246,6 @@
                        value="@newReading.Value"
                        onchange="@OnValueChanged" />
 
-                @* <label>Unit</label>
-                <input value="@newReading.Unit" readonly /> *@
-
                 <label>Notes (Optional)</label>
                 <textarea placeholder="Add a note"
                           onchange="@OnNotesChanged">@newReading.Notes</textarea>
@@ -124,6 +264,7 @@
         {
             <section class="panel">
                 <h3>History</h3>
+
                 @foreach (var h in history)
                 {
                     <div class="history-row">
@@ -143,6 +284,7 @@
         {
             <section class="panel">
                 <h3>Alerts</h3>
+
                 @foreach (var alert in alerts)
                 {
                     <div class="alert-card">
@@ -157,49 +299,45 @@
         {
             <section class="panel">
                 <h3>Settings</h3>
-                <div class="settings-row"><span>Facility</span><strong>Demo Facility</strong></div>
-                <div class="settings-row"><span>API Status</span><strong>Mock Data</strong></div>
+                <div class="settings-row"><span>Facility</span><strong>BBI</strong></div>
+                <div class="settings-row"><span>API Status</span><strong>Live Azure API</strong></div>
                 <div class="settings-row"><span>Sync</span><strong>Ready</strong></div>
             </section>
         }
     </main>
-        
-            
-    <nav class="bottom-nav">  
 
-        <button type="button" class="@HomeButtonClass" onclick="@ShowHome">
-            ⌂
-            <span>Home</span>
-        </button>
+    @if (!showMetricDetails)
+    {
+        <nav class="bottom-nav">
+            <button type="button" class="@HomeButtonClass" onclick="@ShowHome">
+                ⌂
+                <span>Home</span>
+            </button>
 
-        <button type="button" class="@ReadingsButtonClass" onclick="@ShowReadings">
-            ＋
-            <span>Readings</span>
-        </button>
+            <button type="button" class="@ReadingsButtonClass" onclick="@ShowReadings">
+                ＋
+                <span>Readings</span>
+            </button>
 
-        <button type="button" class="@HistoryButtonClass" onclick="@ShowHistory">
-            🕘
-            <span>History</span>
-        </button>
+            <button type="button" class="@HistoryButtonClass" onclick="@ShowHistory">
+                🕘
+                <span>History</span>
+            </button>
 
-        <button type="button" class="@AlertsButtonClass" onclick="@ShowAlerts">
-            ⚠️
-            <span>Alerts</span>
-        </button>
+            <button type="button" class="@AlertsButtonClass" onclick="@ShowAlerts">
+                ⚠️
+                <span>Alerts</span>
+            </button>
 
-        <button type="button" class="@SettingsButtonClass" onclick="@ShowSettings">
-            ⚙️
-            <span>Settings</span>
-        </button>
-
-        
-    </nav>
-        
-    
+            <button type="button" class="@SettingsButtonClass" onclick="@ShowSettings">
+                ⚙️
+                <span>Settings</span>
+            </button>
+        </nav>
+    }
 </div>
 
 @code {
-
     private int selectedLine = 1;
     private bool showLineMenu;
 
@@ -210,6 +348,14 @@
     private List<TrackingAlert> alerts = [];
     private ReadingInput newReading = new("pH", "", null, "");
     private string? savedMessage;
+
+    private List<MetricHistoryPointDto> metricHistory = [];
+    private bool showMetricDetails;
+
+    private string selectedMetricName = "";
+    private string selectedMetricUnit = "";
+    private decimal selectedMetricTargetMin;
+    private decimal selectedMetricTargetMax;
 
     protected override async Task OnInitializedAsync()
     {
@@ -259,18 +405,9 @@
     private void SetTab(string tab)
     {
         activeTab = tab;
+        showMetricDetails = false;
         savedMessage = null;
         StateHasChanged();
-    }
-
-    private void OnParameterChanged(ChangeEventArgs e)
-    {
-        newReading = new ReadingInput(
-            e.Value?.ToString() ?? "",
-            newReading.Unit,
-            newReading.Value,
-            newReading.Notes
-        );
     }
 
     private void OnValueChanged(ChangeEventArgs e)
@@ -286,16 +423,6 @@
             newReading.Parameter,
             newReading.Unit,
             value,
-            newReading.Notes
-        );
-    }
-
-    private void OnUnitChanged(ChangeEventArgs e)
-    {
-        newReading = new ReadingInput(
-            newReading.Parameter,
-            e.Value?.ToString() ?? "",
-            newReading.Value,
             newReading.Notes
         );
     }
@@ -323,7 +450,6 @@
 
             savedMessage = "Reading saved to cloud successfully.";
 
-            // Optional: reload latest data so the new titration appears immediately
             await LoadDataAsync();
         }
         catch (Exception ex)
@@ -352,6 +478,8 @@
         selectedLine = line;
         DataService.SelectedLine = line;
         showLineMenu = false;
+        showMetricDetails = false;
+        metricHistory = [];
 
         await LoadDataAsync();
         StateHasChanged();
@@ -407,5 +535,163 @@
         savedMessage = null;
         StateHasChanged();
     }
-    
+
+    private async Task OpenPhDetails()
+    {
+        await OpenMetricDetailsAsync("pH", "", 5.0m, 7.0m);
+    }
+
+    private async Task OpenTemperatureDetails()
+    {
+        await OpenMetricDetailsAsync("Temperature", "°C", 18.0m, 24.0m);
+    }
+
+    private async Task OpenTonsDetails()
+    {
+        await OpenMetricDetailsAsync("Tons", "t/h", 0m, 100m);
+    }
+
+    private async Task OpenWaxDetails()
+    {
+        await OpenMetricDetailsAsync("Wax", "L/Ton", 0.8m, 1.5m);
+    }
+
+    private async Task OpenMetricDetailsAsync(
+        string metricName,
+        string unit,
+        decimal targetMin,
+        decimal targetMax)
+    {
+        selectedMetricName = metricName;
+        selectedMetricUnit = unit;
+        selectedMetricTargetMin = targetMin;
+        selectedMetricTargetMax = targetMax;
+
+        metricHistory = await DataService.GetMetricHistoryAsync(metricName);
+        showMetricDetails = true;
+
+        StateHasChanged();
+    }
+
+    private void BackToHome()
+    {
+        showMetricDetails = false;
+        StateHasChanged();
+    }
+
+    private decimal LatestMetric => metricHistory.Count == 0
+        ? 0
+        : metricHistory.Last().Value;
+
+    private decimal AverageMetric => metricHistory.Count == 0
+        ? 0
+        : metricHistory.Average(x => x.Value);
+
+    private decimal ChartMinValue
+    {
+        get
+        {
+            if (metricHistory.Count == 0)
+            {
+                return selectedMetricTargetMin;
+            }
+
+            var min = metricHistory.Min(x => x.Value);
+            var max = metricHistory.Max(x => x.Value);
+            var padding = Math.Max((max - min) * 0.1m, 0.1m);
+
+            return Math.Round(min - padding, 2);
+        }
+    }
+
+    private decimal ChartMaxValue
+    {
+        get
+        {
+            if (metricHistory.Count == 0)
+            {
+                return selectedMetricTargetMax;
+            }
+
+            var min = metricHistory.Min(x => x.Value);
+            var max = metricHistory.Max(x => x.Value);
+            var padding = Math.Max((max - min) * 0.1m, 0.1m);
+
+            return Math.Round(max + padding, 2);
+        }
+    }
+
+    private decimal ChartMidValue => Math.Round((ChartMinValue + ChartMaxValue) / 2m, 2);
+
+    private string LatestMetricTimeText => metricHistory.Count == 0
+        ? "-"
+        : FormatTodayTime(metricHistory.Last().DateOfLog);
+
+    private string LatestMetricRangeText => metricHistory.Count == 0
+        ? "-"
+        : metricHistory.Last().IsInRange ? "✓ In Range" : "⚠ Out of Range";
+
+    private static string FormatTodayTime(DateTime value)
+    {
+        return $"Today, {value:HH:mm}";
+    }
+
+    private string GetMetricTimeLabelAtPosition(int position)
+    {
+        if (metricHistory.Count == 0)
+        {
+            return "-";
+        }
+
+        var index = position switch
+        {
+            0 => 0,
+            1 => metricHistory.Count / 3,
+            2 => (metricHistory.Count * 2) / 3,
+            _ => metricHistory.Count - 1
+        };
+
+        index = Math.Clamp(index, 0, metricHistory.Count - 1);
+
+        return metricHistory[index].DateOfLog.ToString("HH:mm");
+    }
+
+    private string BuildMetricPolyline()
+    {
+        if (metricHistory.Count < 2)
+        {
+            return "";
+        }
+
+        var minY = ChartMinValue;
+        var maxY = ChartMaxValue;
+
+        if (maxY <= minY)
+        {
+            maxY = minY + 1.0m;
+        }
+
+        const int left = 36;
+        const int top = 10;
+        const int width = 294;
+        const int height = 120;
+
+        var points = new List<string>();
+
+        for (var i = 0; i < metricHistory.Count; i++)
+        {
+            var x = metricHistory.Count == 1
+                ? left
+                : left + i * width / (metricHistory.Count - 1);
+
+            var normalized = (metricHistory[i].Value - minY) / (maxY - minY);
+            normalized = Math.Clamp(normalized, 0m, 1m);
+
+            var y = top + height - (int)(normalized * height);
+
+            points.Add($"{x},{y}");
+        }
+
+        return string.Join(" ", points);
+    }
 }
