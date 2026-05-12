@@ -138,4 +138,18 @@ app.MapGet("/api/mobile/metric-history", async (
     }
 });
 
+app.MapGet("/api/mobile/alarms", async (
+    int? line,
+    string? machine,
+    int? take,
+    IBasicValuesRepository repository) =>
+    {
+    var result = await repository.GetAlarmsAsync(
+        line ?? 1,
+        machine ?? "Wax",
+        take ?? 10);
+
+    return Results.Ok(result);
+});
+
 app.Run();

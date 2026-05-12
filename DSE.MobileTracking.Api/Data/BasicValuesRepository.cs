@@ -13,6 +13,7 @@ public interface IBasicValuesRepository
     Task SaveAppDataAsync(int line, string field, decimal value);
     Task<IReadOnlyList<PhHistoryPointDto>> GetPhHistoryAsync(int line, int take);
     Task<IReadOnlyList<MetricHistoryPointDto>> GetMetricHistoryAsync(int line, string metric, int take);
+    Task<IReadOnlyList<AlarmMessageDto>> GetAlarmsAsync(int line, string machine, int take);
 }
 
 public sealed class BasicValuesRepository : IBasicValuesRepository
@@ -355,6 +356,83 @@ public sealed class BasicValuesRepository : IBasicValuesRepository
             })
             .OrderBy(x => x.DateOfLog)
             .ToList();
+    }
+
+    public async Task<IReadOnlyList<AlarmMessageDto>> GetAlarmsAsync(int line, string machine, int take)
+    {
+        line = NormalizeLine(line);
+        take = Math.Clamp(take, 1, 50);
+
+        var machineName = BuildAlarmMachineName(line, machine);
+
+        const string sql = """
+    SELECT TOP (@Take)
+        [DateOfEvent],
+        [MachineName],
+        [MachineError],
+        [ErrorCategory],
+        [NotificationType],
+        [ErrStatus]
+    FROM [dbo].[Errorlog]
+    WHERE [MachineName] = @MachineName
+    ORDER BY [DateOfEvent] DESC;
+    """;
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        var rows = await connection.QueryAsync<AlarmMessageDto>(sql, new
+        {
+            Take = take,
+            MachineName = machineName
+        });
+
+        return rows
+            .Select(row =>
+            {
+                row.VisualState = GetAlarmVisualState(row);
+                return row;
+            })
+            .ToList();
+    }
+
+    private static string BuildAlarmMachineName(int line, string machine)
+    {
+        var machineKey = machine.Trim().ToLowerInvariant();
+
+        return machineKey switch
+        {
+            "wax" => $"Wax Machine {line}",
+            "dosing" => $"Dosing Machine {line}",
+            "drench" => $"Drench Dosing Machine {line}",
+            _ => $"Wax Machine {line}"
+        };
+    }
+
+    private static string GetAlarmVisualState(AlarmMessageDto row)
+    {
+        var category = row.ErrorCategory?.Trim() ?? "";
+        var status = row.ErrStatus?.Trim() ?? "";
+
+        var isCleared = status.Equals("Cleared", StringComparison.OrdinalIgnoreCase);
+        var isCritical1 = category.Equals("Critical1", StringComparison.OrdinalIgnoreCase);
+        var isCritical = category.Equals("Critical", StringComparison.OrdinalIgnoreCase);
+
+        if (isCritical1 && !isCleared)
+        {
+            return "critical1-active";
+        }
+
+        if (isCritical1 && isCleared)
+        {
+            return "critical1-cleared";
+        }
+
+        if (isCritical)
+        {
+            return "critical-general";
+        }
+
+        return "normal";
     }
 
     private static int NormalizeLine(int line)
