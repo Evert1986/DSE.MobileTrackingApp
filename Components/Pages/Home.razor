@@ -283,15 +283,45 @@
         else if (activeTab == "alerts")
         {
             <section class="panel">
-                <h3>Alerts</h3>
+                <div class="row between">
+                    <h3>Error Log</h3>
+                    <a>Last 10</a>
+                </div>
 
-                @foreach (var alert in alerts)
+                <div class="filter-row">
+                    <button type="button" class="@AlarmLine1Class" onclick="@SelectAlarmLine1">Line 1</button>
+                    <button type="button" class="@AlarmLine2Class" onclick="@SelectAlarmLine2">Line 2</button>
+                </div>
+
+                <div class="filter-row">
+                    <button type="button" class="@AlarmWaxClass" onclick="@SelectAlarmWax">Wax</button>
+                    <button type="button" class="@AlarmDosingClass" onclick="@SelectAlarmDosing">Dosing</button>
+                    <button type="button" class="@AlarmDrenchClass" onclick="@SelectAlarmDrench">Drench</button>
+                </div>
+
+                @if (alarmMessages.Count == 0)
                 {
-                    <div class="alert-card">
-                        <strong>⚠ @alert.Title</strong>
-                        <p>@alert.Message</p>
-                        <span>@alert.Time.ToString("HH:mm")</span>
-                    </div>
+                    <div class="safe-card">No alarm messages found for this selection.</div>
+                }
+                else
+                {
+                    @foreach (var alarm in alarmMessages)
+                    {
+                        <div class="@GetAlarmCardClass(alarm)">
+                            <div class="row between">
+                                <strong>@alarm.MachineName</strong>
+                                <span class="alarm-time">@alarm.DateOfEvent.ToString("yyyy-MM-dd HH:mm")</span>
+                            </div>
+
+                            <p>@alarm.MachineError</p>
+
+                            <div class="alarm-meta">
+                                <span>@alarm.ErrorCategory</span>
+                                <span>@alarm.NotificationType</span>
+                                <span>@alarm.ErrStatus</span>
+                            </div>
+                        </div>
+                    }
                 }
             </section>
         }
@@ -357,6 +387,10 @@
     private decimal selectedMetricTargetMin;
     private decimal selectedMetricTargetMax;
 
+    private List<AlarmMessageDto> alarmMessages = [];
+    private int selectedAlarmLine = 1;
+    private string selectedAlarmMachine = "Wax";
+
     protected override async Task OnInitializedAsync()
     {
         DataService.SelectedLine = selectedLine;
@@ -377,36 +411,43 @@
     private string AlertsButtonClass => GetButtonClass("alerts");
     private string SettingsButtonClass => GetButtonClass("settings");
 
-    private void ShowHome()
+    private async Task ShowHome()
     {
-        SetTab("home");
+        await SetTabAsync("home");
     }
 
-    private void ShowReadings()
+    private async Task ShowReadings()
     {
-        SetTab("readings");
+        await SetTabAsync("readings");
     }
 
-    private void ShowHistory()
+    private async Task ShowHistory()
     {
-        SetTab("history");
+        await SetTabAsync("history");
     }
 
-    private void ShowAlerts()
+    private async Task ShowAlerts()
     {
-        SetTab("alerts");
+        await SetTabAsync("alerts");
     }
 
-    private void ShowSettings()
+    private async Task ShowSettings()
     {
-        SetTab("settings");
+        await SetTabAsync("settings");
     }
 
-    private void SetTab(string tab)
+    private async Task SetTabAsync(string tab)
     {
         activeTab = tab;
         showMetricDetails = false;
         savedMessage = null;
+
+        if (tab == "alerts")
+        {
+            selectedAlarmLine = selectedLine;
+            await LoadAlarmsAsync();
+        }
+
         StateHasChanged();
     }
 
@@ -693,5 +734,63 @@
         }
 
         return string.Join(" ", points);
+    }
+
+    private async Task LoadAlarmsAsync()
+    {
+        alarmMessages = await DataService.GetAlarmsAsync(selectedAlarmLine, selectedAlarmMachine);
+    }
+
+    private async Task SelectAlarmLine1()
+    {
+        selectedAlarmLine = 1;
+        await LoadAlarmsAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectAlarmLine2()
+    {
+        selectedAlarmLine = 2;
+        await LoadAlarmsAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectAlarmWax()
+    {
+        selectedAlarmMachine = "Wax";
+        await LoadAlarmsAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectAlarmDosing()
+    {
+        selectedAlarmMachine = "Dosing";
+        await LoadAlarmsAsync();
+        StateHasChanged();
+    }
+
+    private async Task SelectAlarmDrench()
+    {
+        selectedAlarmMachine = "Drench";
+        await LoadAlarmsAsync();
+        StateHasChanged();
+    }
+
+    private string AlarmLine1Class => selectedAlarmLine == 1 ? "filter-chip active" : "filter-chip";
+    private string AlarmLine2Class => selectedAlarmLine == 2 ? "filter-chip active" : "filter-chip";
+
+    private string AlarmWaxClass => selectedAlarmMachine == "Wax" ? "filter-chip active" : "filter-chip";
+    private string AlarmDosingClass => selectedAlarmMachine == "Dosing" ? "filter-chip active" : "filter-chip";
+    private string AlarmDrenchClass => selectedAlarmMachine == "Drench" ? "filter-chip active" : "filter-chip";
+
+    private static string GetAlarmCardClass(AlarmMessageDto alarm)
+    {
+        return alarm.VisualState switch
+        {
+            "critical1-active" => "alarm-card alarm-critical-active",
+            "critical1-cleared" => "alarm-card alarm-critical-cleared",
+            "critical-general" => "alarm-card alarm-general",
+            _ => "alarm-card alarm-normal"
+        };
     }
 }

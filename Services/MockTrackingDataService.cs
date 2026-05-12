@@ -88,6 +88,27 @@ public class MockTrackingDataService : ITrackingDataService
         return Task.FromResult(values);
     }
 
+    public Task<List<AlarmMessageDto>> GetAlarmsAsync(int line, string machine)
+    {
+        var now = DateTime.Now;
+
+        var result = new List<AlarmMessageDto>
+    {
+        new()
+        {
+            DateOfEvent = now,
+            MachineName = $"{machine} Machine {line}",
+            MachineError = $"{machine} Machine {line} demo alarm",
+            ErrorCategory = "Critical1",
+            NotificationType = "CUS",
+            ErrStatus = "Active",
+            VisualState = "critical1-active"
+        }
+    };
+
+        return Task.FromResult(result);
+    }
+
     public Task SaveReadingAsync(ReadingInput input)
     {
         return Task.CompletedTask;

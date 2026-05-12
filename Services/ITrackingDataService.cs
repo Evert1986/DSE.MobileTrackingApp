@@ -12,5 +12,6 @@ public interface ITrackingDataService
     Task SaveReadingAsync(ReadingInput input);
     Task<List<PhHistoryPointDto>> GetPhHistoryAsync();
     Task<List<MetricHistoryPointDto>> GetMetricHistoryAsync(string metric);
+    Task<List<AlarmMessageDto>> GetAlarmsAsync(int line, string machine);
 
 }

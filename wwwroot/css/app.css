@@ -373,3 +373,79 @@ input[readonly] {
         font-size: 12px;
         color: #9FB2CA;
     }
+
+.filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-chip {
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    color: #D6E7FF;
+    border-radius: 14px;
+    padding: 9px 12px;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+    .filter-chip.active {
+        color: white;
+        background: rgba(24,160,255,.22);
+        border-color: rgba(24,160,255,.45);
+    }
+
+.alarm-card {
+    margin-top: 12px;
+    padding: 15px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.10);
+}
+
+    .alarm-card p {
+        margin: 10px 0;
+        color: #EAF3FF;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+.alarm-critical-active {
+    background: linear-gradient(135deg, rgba(255,67,67,.30), rgba(120,20,20,.22));
+    border-color: rgba(255,67,67,.48);
+}
+
+.alarm-critical-cleared {
+    background: rgba(255,255,255,.045);
+    border-color: rgba(43,255,159,.25);
+}
+
+.alarm-general {
+    background: linear-gradient(135deg, rgba(255,177,43,.20), rgba(255,177,43,.08));
+    border-color: rgba(255,177,43,.30);
+}
+
+.alarm-normal {
+    background: rgba(255,255,255,.045);
+}
+
+.alarm-time {
+    color: #9FB2CA;
+    font-size: 11px;
+}
+
+.alarm-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+    .alarm-meta span {
+        color: #D6E7FF;
+        background: rgba(255,255,255,.07);
+        border-radius: 10px;
+        padding: 6px 8px;
+        font-size: 11px;
+        font-weight: 700;
+    }

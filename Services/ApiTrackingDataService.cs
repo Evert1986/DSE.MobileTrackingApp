@@ -285,4 +285,12 @@ public sealed class ApiTrackingDataService : ITrackingDataService
 
         return result ?? new List<MetricHistoryPointDto>();
     }
+
+    public async Task<List<AlarmMessageDto>> GetAlarmsAsync(int line, string machine)
+    {
+        var result = await _httpClient.GetFromJsonAsync<List<AlarmMessageDto>>(
+            $"api/mobile/alarms?line={line}&machine={Uri.EscapeDataString(machine)}&take=10");
+
+        return result ?? new List<AlarmMessageDto>();
+    }
 }
